@@ -1,0 +1,17 @@
+	 Welcome Webcode Retail
+ Bill Number : 4523
+ Customer Name : Prashant Singh
+ Phone Number : 987654XXXX
+=======================================
+Product			Price
+=======================================
+ Cosmetics :			1500.0
+ Grocery :			972.0
+ Cold Drink :			480.0
+ Cosmetics Tax:			270.0
+ Grocery Tax:			174.96
+ Cold Drink Tax:			86.4
+=======================================
+Total			3483.36
+=======================================
+			Signature
