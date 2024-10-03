@@ -6,7 +6,7 @@ import os
 win=Tk()
 win.geometry("1350x700+0+0")
 win.title("Billing Software")
-win.iconbitmap("icon\\rubik_cube_icon_182136.ico")
+# win.iconbitmap("icon\\rubik_cube_icon_182136.ico")
 
 #========================= Cosmetics Price List ===========================
 soap_price=10
@@ -396,20 +396,18 @@ c3_txt.grid(row=2,column=3,padx=10,pady=5)
 #=================Button Frame==============
 
 btn_f=Frame(f6,relief=GROOVE,bg="red",bd=8)
-btn_f.place(x=740,width=585,height=130)
+btn_f.place(x=800,width=530,height=130)
 
-total_btn=Button(btn_f,text="Total",font=("times new roman",12,"bold"),command=total,bg="cadetblue",fg="Blue",pady=15,width=11,bd=5)
+total_btn=Button(btn_f,text="Total",font=("times new roman",12,"bold"),command=total,bg="cadetblue",fg="Blue",pady=12,width=9,bd=4)
 total_btn.grid(row=0,column=0,padx=10,pady=20)
 
-gbill_btn=Button(btn_f,command=welcome_bill,text="Genrate Bill",font=("times new roman",12,"bold"),bg="cadetblue",fg="Blue",pady=15,width=11,bd=5)
-gbill_btn.grid(row=0,column=1,padx=15,pady=20)
+gbill_btn=Button(btn_f,command=welcome_bill,text="Genrate Bill",font=("times new roman",12,"bold"),bg="cadetblue",fg="Blue",pady=12,width=9,bd=4)
+gbill_btn.grid(row=0,column=1,padx=10,pady=20)
 
-clear_btn=Button(btn_f,text="Clear",font=("times new roman",12,"bold"),bg="cadetblue",command=clear,fg="Blue",pady=15,width=11,bd=5)
-clear_btn.grid(row=0,column=2,padx=15,pady=20)
+clear_btn=Button(btn_f,text="Clear",font=("times new roman",12,"bold"),bg="cadetblue",command=clear,fg="Blue",pady=12,width=9,bd=4)
+clear_btn.grid(row=0,column=2,padx=10,pady=20)
 
-exit_btn=Button(btn_f,text="Exit",font=("times new roman",12,"bold"),bg="cadetblue",fg="Blue",pady=15,width=11,bd=5,command=exitapp)
-exit_btn.grid(row=0,column=3,padx=15,pady=20)
-
-
+exit_btn=Button(btn_f,text="Exit",font=("times new roman",12,"bold"),bg="cadetblue",fg="Blue",pady=12,width=9,bd=4,command=exitapp)
+exit_btn.grid(row=0,column=3,padx=10,pady=20)
 
 win.mainloop()
