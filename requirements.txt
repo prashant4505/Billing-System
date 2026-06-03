@@ -1,0 +1,9 @@
+# No pip packages required — all modules are Python standard library.
+#
+# IMPORTANT — Linux users must install tkinter separately via system package manager:
+#
+#   Ubuntu / Debian:   sudo apt-get install python3-tk
+#   Fedora / RHEL:     sudo dnf install python3-tkinter
+#   Arch Linux:        sudo pacman -S tk
+#
+# Windows / macOS: tkinter is already included with Python — no extra step needed.
