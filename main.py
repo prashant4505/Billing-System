@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import messagebox
 import random
 import os
+import json
 
 # ── Window setup ──────────────────────────────────────────────────────────────
 win = Tk()
@@ -13,21 +14,20 @@ screen_h = win.winfo_screenheight()
 win.geometry(f"{screen_w}x{screen_h}+0+0")
 
 try:
-    win.state("zoomed")          # Windows / some DEs
+    win.state("zoomed")
 except Exception:
     try:
-        win.attributes("-zoomed", True)   # Linux / X11
+        win.attributes("-zoomed", True)
     except Exception:
         pass
 
-# Font scaling relative to a 1366×768 baseline
 _scale = min(screen_w / 1366, screen_h / 768)
 def fs(size):
     return max(8, int(size * _scale))
 
-# Resolve paths relative to script location so the app works from any CWD
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-BILLS_DIR  = os.path.join(SCRIPT_DIR, "bills")
+SCRIPT_DIR     = os.path.dirname(os.path.abspath(__file__))
+BILLS_DIR      = os.path.join(SCRIPT_DIR, "bills")
+CUSTOMERS_FILE = os.path.join(SCRIPT_DIR, "customers.json")
 
 BG       = "red"
 FG_WHITE = "white"
@@ -63,13 +63,23 @@ CATEGORIES = {
     },
 }
 
-# One IntVar per product to hold entered quantity
 qty_vars = {
     cat: {item: IntVar() for item in items}
     for cat, items in CATEGORIES.items()
 }
 
 bill_num = random.randint(1000, 9999)
+
+# ── Customer database helpers ─────────────────────────────────────────────────
+def load_customers():
+    if os.path.exists(CUSTOMERS_FILE):
+        with open(CUSTOMERS_FILE) as fh:
+            return json.load(fh)
+    return {}
+
+def save_customers(db):
+    with open(CUSTOMERS_FILE, "w") as fh:
+        json.dump(db, fh, indent=2)
 
 # ── Business logic ────────────────────────────────────────────────────────────
 def calc_subtotal(category):
@@ -134,15 +144,43 @@ def generate_bill():
     bill_area.insert(END, "=" * 40 + "\n")
     bill_area.insert(END, "\n       Authorized Signature\n")
 
-    _prompt_save()
+    _prompt_save(sub, tax, grand_total)
 
-def _prompt_save():
+def _prompt_save(sub, tax, grand_total):
     if not messagebox.askyesno("Save Bill", "Save this bill?"):
         return
     os.makedirs(BILLS_DIR, exist_ok=True)
-    path = os.path.join(BILLS_DIR, f"{cbill_txt.get()}.txt")
-    with open(path, "w") as fh:
+    num = cbill_txt.get()
+
+    # Save text bill
+    txt_path = os.path.join(BILLS_DIR, f"{num}.txt")
+    with open(txt_path, "w") as fh:
         fh.write(bill_area.get(1.0, END))
+
+    # Save structured JSON bill
+    bill_data = {
+        "bill_num": num,
+        "name": cname.get().strip(),
+        "phone": cnum.get().strip(),
+        "quantities": {
+            cat: {item: qty_vars[cat][item].get() for item in CATEGORIES[cat]}
+            for cat in CATEGORIES
+        },
+        "subtotals": sub,
+        "taxes": tax,
+        "grand_total": round(grand_total, 2),
+    }
+    json_path = os.path.join(BILLS_DIR, f"{num}.json")
+    with open(json_path, "w") as fh:
+        json.dump(bill_data, fh, indent=2)
+
+    # Update customer database keyed by phone number
+    phone = cnum.get().strip()
+    if phone:
+        db = load_customers()
+        db[phone] = {"name": cname.get().strip(), "last_bill": num}
+        save_customers(db)
+
     messagebox.showinfo("Saved", "Bill saved successfully!")
 
 def search_bill():
@@ -150,13 +188,66 @@ def search_bill():
     if not num:
         messagebox.showwarning("Search", "Enter a bill number to search.")
         return
-    path = os.path.join(BILLS_DIR, f"{num}.txt")
-    if not os.path.exists(path):
-        messagebox.showerror("Not Found", f"No bill found for #{num}.")
+
+    json_path = os.path.join(BILLS_DIR, f"{num}.json")
+    txt_path  = os.path.join(BILLS_DIR, f"{num}.txt")
+
+    if os.path.exists(json_path):
+        with open(json_path) as fh:
+            data = json.load(fh)
+
+        # Restore customer details
+        cname_txt.delete(0, END)
+        cname_txt.insert(0, data.get("name", ""))
+        ccont_txt.delete(0, END)
+        ccont_txt.insert(0, data.get("phone", ""))
+
+        # Restore all quantities
+        for cat, items in data.get("quantities", {}).items():
+            for item, qty in items.items():
+                if cat in qty_vars and item in qty_vars[cat]:
+                    qty_vars[cat][item].set(qty)
+
+        # Restore totals entries
+        sub = data.get("subtotals", {})
+        tax = data.get("taxes", {})
+        for entry, key in zip([m1_txt, m2_txt, m3_txt],
+                               ["cosmetics", "grocery", "cold_drink"]):
+            entry.delete(0, END)
+            entry.insert(0, sub.get(key, ""))
+        for entry, key in zip([c1_txt, c2_txt, c3_txt],
+                               ["cosmetics", "grocery", "cold_drink"]):
+            entry.delete(0, END)
+            entry.insert(0, tax.get(key, ""))
+
+        # Show text bill if available
+        bill_area.delete(1.0, END)
+        if os.path.exists(txt_path):
+            with open(txt_path) as fh:
+                bill_area.insert(END, fh.read())
+        else:
+            bill_area.insert(END, f"Bill #{num} loaded from JSON.\n")
         return
-    bill_area.delete(1.0, END)
-    with open(path) as fh:
-        bill_area.insert(END, fh.read())
+
+    if os.path.exists(txt_path):
+        bill_area.delete(1.0, END)
+        with open(txt_path) as fh:
+            bill_area.insert(END, fh.read())
+        return
+
+    messagebox.showerror("Not Found", f"No bill found for #{num}.")
+
+def phone_autofill(event=None):
+    """Look up the entered phone number and autofill customer name if known."""
+    phone = cnum.get().strip()
+    if not phone:
+        return
+    db = load_customers()
+    if phone in db:
+        current_name = cname.get().strip()
+        if not current_name:
+            cname_txt.delete(0, END)
+            cname_txt.insert(0, db[phone]["name"])
 
 def clear():
     global bill_num
@@ -173,14 +264,12 @@ def clear():
 
 # ── UI construction ───────────────────────────────────────────────────────────
 
-# Title bar
 Label(
     win, text="Billing Software", bd=8,
     font=("Times New Roman", fs(26), "bold"),
     relief=GROOVE, bg=BG, fg="yellow", pady=4,
 ).pack(fill=X)
 
-# Customer details strip
 f_cust = LabelFrame(
     win, text="Customer Details",
     font=("Times New Roman", fs(10), "bold"),
@@ -206,6 +295,10 @@ ccont_txt = Entry(f_cust, font=("Times New Roman", fs(11), "bold"),
                   textvariable=cnum, fg=FG_ENTRY, bd=5)
 ccont_txt.grid(row=0, column=3, padx=10, pady=5, sticky="ew")
 
+# Autofill name when phone number is entered
+ccont_txt.bind("<Return>",    phone_autofill)
+ccont_txt.bind("<FocusOut>",  phone_autofill)
+
 Label(f_cust, text="Bill No :",
       font=("Times New Roman", fs(13), "bold"), fg=FG_WHITE, bg=BG
       ).grid(row=0, column=4, padx=10, pady=5, sticky="e")
@@ -220,8 +313,6 @@ Button(f_cust, text="Search", command=search_bill,
        ).grid(row=0, column=6, padx=10, pady=5)
 
 # ── Bottom: totals summary + action buttons ───────────────────────────────────
-# Packed BEFORE mid so tkinter reserves this space first — keeps buttons
-# visible even when the window is made small.
 f_menu = LabelFrame(win, text="Bill Menu", relief=GROOVE,
                     font=("Times New Roman", fs(10), "bold"),
                     fg=FG_GOLD, bg=BG, bd=8)
@@ -262,7 +353,6 @@ for row, lbl in enumerate(TAX_LABELS):
     _tax_entries.append(e)
 c1_txt, c2_txt, c3_txt = _tax_entries
 
-# Action buttons (right side of bill menu)
 btn_frame = Frame(f_menu, bg=BG, relief=GROOVE, bd=6)
 btn_frame.grid(row=0, column=4, rowspan=3, columnspan=5,
                padx=10, pady=6, sticky="nsew")
@@ -284,8 +374,6 @@ Button(btn_frame, text="Exit",          command=win.destroy,    **BTN_STYLE
        ).grid(row=0, column=3, padx=10, pady=10, sticky="ew")
 
 # ── Middle: product panels + bill area ────────────────────────────────────────
-# Packed AFTER f_menu so it fills only the remaining space between the
-# header and the always-visible bottom bar.
 mid = Frame(win, bg=BG)
 mid.pack(fill=BOTH, expand=True, padx=5, pady=2)
 for col in range(4):
@@ -313,7 +401,6 @@ _build_category_panel(mid, 0, "Cosmetics",   "cosmetics")
 _build_category_panel(mid, 1, "Grocery",     "grocery")
 _build_category_panel(mid, 2, "Cold Drinks", "cold_drink")
 
-# Bill text area
 f_bill = Frame(mid, bd=8, relief=GROOVE, bg="white")
 f_bill.grid(row=0, column=3, sticky="nsew", padx=3, pady=3)
 f_bill.rowconfigure(1, weight=1)
@@ -331,7 +418,6 @@ v_scroll.config(command=bill_area.yview)
 v_scroll.grid(row=1, column=1, sticky="ns")
 bill_area.grid(row=1, column=0, sticky="nsew")
 
-# Prevent the window from being shrunk so small that widgets overlap
 win.minsize(900, 550)
 
 win.mainloop()

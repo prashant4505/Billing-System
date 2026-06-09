@@ -1,0 +1,42 @@
+{
+  "bill_num": "5606",
+  "name": "Prashant",
+  "phone": "9876543210",
+  "quantities": {
+    "cosmetics": {
+      "Bath Soap": 10,
+      "Face Cream": 0,
+      "Face Wash": 0,
+      "Hair Spray": 6,
+      "Hair Gel": 0,
+      "Body Lotion": 0
+    },
+    "grocery": {
+      "Rice": 6,
+      "Food Oil": 0,
+      "Daal": 0,
+      "Wheat": 0,
+      "Sugar": 0,
+      "Tea": 6
+    },
+    "cold_drink": {
+      "Maaza": 0,
+      "Coca Cola": 0,
+      "Frooti": 0,
+      "Thumbs Up": 0,
+      "Limka": 0,
+      "Sprite": 0
+    }
+  },
+  "subtotals": {
+    "cosmetics": 250.0,
+    "grocery": 480.0,
+    "cold_drink": 0.0
+  },
+  "taxes": {
+    "cosmetics": 45.0,
+    "grocery": 86.4,
+    "cold_drink": 0.0
+  },
+  "grand_total": 861.4
+}

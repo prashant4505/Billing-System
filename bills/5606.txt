@@ -1,0 +1,20 @@
+    *** Welcome to Retail Store ***
+  Bill No  : 5606
+  Name     : Prashant
+  Phone    : 9876543210
+========================================
+  Product                    Price
+========================================
+  Cosmetics                 250.00
+  Grocery                   480.00
+  Cold Drinks                 0.00
+----------------------------------------
+  Tax 18% - Cosmetics        45.00
+  Tax 18% - Grocery          86.40
+  Tax 18% - Cold Drinks       0.00
+========================================
+  TOTAL                     861.40
+========================================
+
+       Authorized Signature
+
